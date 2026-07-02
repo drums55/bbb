@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  // One-click dev loop. These run the tools/ scripts against ${input:bbb} (your board's
+  // user@host). Default = the USB-net dev gadget (debian@192.168.7.2); change if you SSH
+  // over ethernet (e.g. debian@bbb.local). Run via: Terminal > Run Task, or bind a key.
+  "inputs": [
+    {
+      "id": "bbb",
+      "type": "promptString",
+      "description": "BBB ssh target (user@host)",
+      "default": "debian@192.168.7.2"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "BBB: deploy + restart",
+      "type": "shell",
+      "command": "tools/deploy.sh ${input:bbb}",
+      "problemMatcher": []
+    },
+    {
+      "label": "BBB: follow logs",
+      "type": "shell",
+      "command": "tools/logs.sh ${input:bbb}",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "BBB: tune sensor (live ADC)",
+      "type": "shell",
+      "command": "tools/tune.sh ${input:bbb}",
+      "problemMatcher": []
+    }
+  ]
+}

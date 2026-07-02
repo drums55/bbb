@@ -78,6 +78,7 @@ IIO_RAW = "/sys/bus/iio/devices/iio:device0/in_voltage{}_raw".format(ADC_CHAN)
 STATUS_ON = 0x90 | ((CHANNEL - 1) & 0x0F)
 STATUS_OFF = 0x80 | ((CHANNEL - 1) & 0x0F)
 POLL_DT = 1.0 / POLL_HZ
+VERBOSE = False          # set by --verbose: log every note on/off to the journal
 
 
 def find_midi_dev():
@@ -241,10 +242,14 @@ def main():
             if val > peak:
                 peak = val
             if now - t_state >= peak_window:
-                midi.note_on(NOTE, scale_velocity(peak, thresh))
+                vel = scale_velocity(peak, thresh)
+                midi.note_on(NOTE, vel)
                 led.set(True)
                 if LED_MODE == "flash":
                     led_off_at = now + led_flash
+                if VERBOSE:
+                    sys.stderr.write("fsr-midi: NOTE-ON  {} vel={} (peak={})\n"
+                                     .format(NOTE, vel, peak))
                 state, t_state, last_active = HELD, now, now
 
         elif state == HELD:
@@ -254,6 +259,8 @@ def main():
                 midi.note_off(NOTE)
                 if LED_MODE == "hold":
                     led.set(False)
+                if VERBOSE:
+                    sys.stderr.write("fsr-midi: NOTE-OFF {}\n".format(NOTE))
                 state, t_state, last_active = REFRACTORY, now, now
 
         elif state == REFRACTORY:
@@ -261,6 +268,40 @@ def main():
                 state = ARMED
 
         time.sleep(POLL_DT)
+
+
+def tune():
+    """Calibration/debug mode (no MIDI): stream live ADC so you can pick thresholds.
+    Run on the board:  python3 fsr_midi.py --tune   (Ctrl-C to stop). Press the sensor and
+    watch the numbers -- set REST_MARGIN a bit above the resting noise, VEL_CEIL near the
+    hardest-slap peak."""
+    for _ in range(200):
+        if os.path.exists(IIO_RAW):
+            break
+        time.sleep(0.05)
+    else:
+        sys.stderr.write("fsr-midi --tune: {} not found -- is BB-ADC enabled?\n".format(IIO_RAW))
+        return 1
+    adc = open_adc()
+    base = [read_adc(adc) for _ in range(64)]
+    rest = sum(base) // len(base)
+    lo = hi = read_adc(adc)
+    sys.stdout.write("tuning {}  (ADC_CHAN={})  rest~{}  -- press the sensor; Ctrl-C to stop\n"
+                     .format(IIO_RAW, ADC_CHAN, rest))
+    sys.stdout.write("suggest: REST_MARGIN ~ noise+20, VEL_CEIL ~ hardest peak below 4095\n\n")
+    last = 0.0
+    while True:
+        v = read_adc(adc)
+        lo = min(lo, v)
+        hi = max(hi, v)
+        now = time.monotonic()
+        if now - last >= 0.1:                 # ~10 Hz print, readable in a terminal
+            bar = "#" * min(50, v * 50 // 4095)
+            sys.stdout.write("\rcur={:4d}  rest={:4d}  min={:4d}  max={:4d}  |{:<50}|"
+                             .format(v, rest, lo, hi, bar))
+            sys.stdout.flush()
+            last = now
+        time.sleep(0.002)
 
 
 # ---------------------------------------------------------------------------
@@ -281,6 +322,9 @@ def main():
 
 if __name__ == "__main__":
     try:
+        if "--tune" in sys.argv:
+            sys.exit(tune())
+        VERBOSE = "--verbose" in sys.argv or "-v" in sys.argv
         sys.exit(main())
     except KeyboardInterrupt:
-        pass
+        sys.stdout.write("\n")

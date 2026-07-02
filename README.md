@@ -22,10 +22,19 @@ systemd/fsr-midi.service    # starts fast, waits for NOTHING network
 gadget/                     # g_midi module config (Option A, default) + configfs script (Option B)
 setup/stage1_apply.sh       # idempotent + reversible: set-default, mask bloat, free UDC, install
 setup/stage1_revert.sh      # undo everything Stage 1 did
+tools/                      # laptop-side dev loop: deploy.sh / logs.sh / tune.sh (over SSH)
+.vscode/                    # Remote-SSH + serial-monitor recommendations + one-click tasks
 docs/diagnostics.md         # Stage 0: what to run on the BBB (read-only) and how to read it
-docs/hardware.md            # FSR402 divider wiring + ADC 1.8 V safety
+docs/hardware.md            # FSR402 divider wiring + hit-LED + ADC 1.8 V safety
+docs/dev_workflow.md        # laptop + VS Code loop; how to keep SSH once g_midi takes the port
 docs/stage2_fastboot.md     # optional <5 s proposal: initramfs g_midi + U-Boot trim + Buildroot
 ```
+
+## Develop
+Edit on the laptop, run on the board. See [`docs/dev_workflow.md`](docs/dev_workflow.md): VS Code
+**Remote-SSH** as the core loop, a live `--tune` calibration mode, and -- because `g_midi`-only
+takes over the mini-USB port -- three ways to keep a shell (ethernet SSH / a **MIDI+USB-Ethernet
+dev gadget** / FTDI serial). Keep a **dev card** (comfy) and a **perf card** (the ~10 s boot).
 
 ## Do it in order
 1. **Diagnose (safe, read-only).** SSH into the BBB, run the block in

@@ -1,0 +1,9 @@
+{
+  // VS Code will offer to install these when you open the repo.
+  "recommendations": [
+    "ms-vscode-remote.remote-ssh",   // edit/run/debug directly on the BBB (the core dev loop)
+    "ms-python.python",              // Python editing for src/fsr_midi.py
+    "ms-vscode.vscode-serial-monitor", // FTDI serial console (the always-works debug fallback)
+    "timonwong.shellcheck"           // lint the setup/gadget/tools shell scripts
+  ]
+}
