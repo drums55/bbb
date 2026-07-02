@@ -40,6 +40,32 @@ divider from the board's dedicated **1.8 V ADC rail** so the node physically can
   - a hard slap should read high but **stay under 4095** (not railed), so velocity has range.
   Adjust `Rm` and the `fsr_midi.py` thresholds together.
 
+## Hit LED (matches the original rig)
+The original rig lights an LED on each press. Drive it from any spare GPIO -> series
+resistor -> LED -> GND (active-high). Keep the resistor ~330 Ohm - 1 k (BBB GPIO is 3.3 V,
+~4-6 mA is plenty for an indicator).
+
+```
+  GPIO pin ---[ R 330-1k ]---|>|--- GND        (LED anode to R, cathode to GND)
+```
+
+Set `LED_GPIO` in `src/fsr_midi.py` to the **sysfs gpio number** of the pin you wired (not
+the header label). `LED_MODE="hold"` lights it while pressed; `"flash"` gives a brief blink
+per hit. If nothing lights, the pin likely isn't muxed as GPIO or the number is wrong -- the
+script just logs and runs without the LED (never blocks MIDI).
+
+Handy P8/P9 header pin -> gpio number (all default to GPIO mode on stock Debian):
+
+| Header | gpio | Header | gpio |
+|--------|------|--------|------|
+| P9_15  | 48   | P8_11  | 45   |
+| P9_23  | 49   | P8_12  | 44   |
+| P9_12  | 60   | P8_14  | 26   |
+| P9_27  | 115  | P8_16  | 46   |
+
+(`gpio = 32*bank + index`; confirm your board with `gpioinfo` if you have libgpiod.) The
+template default is **48 = P9_15**, next to the analog pins -- change it to your actual pin.
+
 ## Notes
 - FSR402 is durable enough for repeated slap/tap triggering. Velocity is expressive but not
   lab-precise -- perfect for a drum trigger, not for weighing things.

@@ -62,6 +62,14 @@ RECAL_WHEN_IDLE_S = 2.0  # re-baseline the rest level after this long untouched 
 # MIDI output node. Leave "" to auto-detect the gadget rawmidi node.
 MIDI_DEV = ""            # e.g. "/dev/snd/midiC1D0"
 
+# LED-on-hit (matches the original rig: an LED flashes when you press). Driven via zero-dep
+# sysfs GPIO. Wire: GPIO pin -> series R (~330-1k) -> LED -> GND (see docs/hardware.md).
+LED_ENABLE = True
+LED_GPIO = 48            # sysfs gpio number. 48 = P9_15 (GPIO1_16). *** CHANGE to your pin ***
+LED_MODE = "hold"        # "hold" = lit while pressed; "flash" = a brief blink per hit
+LED_FLASH_MS = 40        # flash length when LED_MODE == "flash"
+LED_ACTIVE_HIGH = True   # True: GPIO high = LED on (GPIO->R->LED->GND). False if wired to 3.3V.
+
 # ---------------------------------------------------------------------------
 # Internals
 # ---------------------------------------------------------------------------
@@ -140,6 +148,44 @@ class MidiOut:
         self.send((STATUS_OFF, note & 0x7F, 0))
 
 
+class Led:
+    """Zero-dep GPIO LED via legacy sysfs. No-ops (never crashes the trigger) if the pin
+    can't be exported -- e.g. wrong number or not muxed as GPIO. (libgpiod is the modern
+    alternative but needs an apt package; sysfs keeps us dependency-free.)"""
+
+    def __init__(self, gpio, active_high=True):
+        self.ok = False
+        self.active_high = active_high
+        self.val = None
+        if not LED_ENABLE:
+            return
+        base = "/sys/class/gpio/gpio{}".format(gpio)
+        try:
+            if not os.path.exists(base):
+                with open("/sys/class/gpio/export", "w") as f:
+                    f.write(str(gpio))
+            with open(base + "/direction", "w") as f:
+                f.write("out")
+            self.val = open(base + "/value", "w")
+            self.ok = True
+            self.set(False)
+            sys.stderr.write("fsr-midi: LED on gpio{} ({})\n".format(gpio, LED_MODE))
+        except OSError as e:
+            sys.stderr.write("fsr-midi: LED gpio{} unavailable ({}) -- running without LED\n"
+                             .format(gpio, e))
+
+    def set(self, on):
+        if not self.ok:
+            return
+        physical = on if self.active_high else (not on)
+        try:
+            self.val.seek(0)
+            self.val.write("1" if physical else "0")
+            self.val.flush()
+        except OSError:
+            self.ok = False
+
+
 def main():
     # Be defensive: wait (bounded) for the ADC/IIO node in case the DT overlay is late.
     # The systemd unit orders us after sysinit.target so this normally passes immediately.
@@ -153,6 +199,7 @@ def main():
 
     adc = open_adc()
     midi = MidiOut()
+    led = Led(LED_GPIO, LED_ACTIVE_HIGH)
 
     # Auto-baseline the resting level (average a handful of samples).
     samples = [read_adc(adc) for _ in range(64)]
@@ -169,10 +216,17 @@ def main():
     last_active = time.monotonic()
     peak_window = PEAK_WINDOW_MS / 1000.0
     refractory = REFRACTORY_MS / 1000.0
+    led_flash = LED_FLASH_MS / 1000.0
+    led_off_at = 0.0                          # for LED_MODE == "flash"
 
     while True:
         now = time.monotonic()
         val = read_adc(adc)
+
+        # LED "flash" mode: auto-extinguish after the flash window, independent of hold.
+        if led_off_at and now >= led_off_at:
+            led.set(False)
+            led_off_at = 0.0
 
         if state == ARMED:
             if val >= thresh:
@@ -188,6 +242,9 @@ def main():
                 peak = val
             if now - t_state >= peak_window:
                 midi.note_on(NOTE, scale_velocity(peak, thresh))
+                led.set(True)
+                if LED_MODE == "flash":
+                    led_off_at = now + led_flash
                 state, t_state, last_active = HELD, now, now
 
         elif state == HELD:
@@ -195,6 +252,8 @@ def main():
                 peak = val                    # kept for optional aftertouch later
             if val <= release:
                 midi.note_off(NOTE)
+                if LED_MODE == "hold":
+                    led.set(False)
                 state, t_state, last_active = REFRACTORY, now, now
 
         elif state == REFRACTORY:
