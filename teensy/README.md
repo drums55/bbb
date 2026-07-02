@@ -5,6 +5,9 @@ The BeagleBone is a Linux computer, so it always pays a boot cost (we cut it 62s
 it's a class-compliant USB-MIDI device in **<0.1 s** -- "plug in = play". For one FSR -> one note
 this is the natural fit.
 
+> **Full dev workflow** (VS Code + git + Arduino IDE, day-to-day loop): see
+> [`WORKFLOW.md`](WORKFLOW.md). One-time install checklist: [`QUICKSTART_windows.md`](QUICKSTART_windows.md).
+
 ## Flash it
 1. Install **Arduino IDE** + **Teensyduino**.
 2. `Tools > Board` -> your Teensy (3.x / LC / 4.x).
