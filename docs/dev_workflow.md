@@ -13,34 +13,45 @@ are opt-in (a separate SD card / gadget), they don't live on the perf image.
   - **dev card** -> composite **MIDI + USB-Ethernet** gadget, so one cable gives you MIDI *and*
     SSH-over-USB. Verbose, comfy.
   - **perf card** -> `g_midi` only + the Stage-1 cuts. This is the ~10 s boot you measure/gig with.
-- Three ways in, in order of preference: **(1) Remote-SSH over ethernet**, **(2) Remote-SSH over
-  the USB-Ethernet dev gadget**, **(3) FTDI serial console** (always works, even when boot breaks).
+- This laptop is **Windows with no ethernet**, so the dev loop rides the **one mini-USB cable**:
+  a composite **MIDI + USB-Ethernet (RNDIS)** dev gadget gives MIDI *and* SSH-over-USB at once.
+  **FTDI serial** is the always-works fallback for debugging boot itself.
 
-## 1. Get a shell into the board (pick what you have)
+## 1. Get a shell into the board (Windows, single mini-USB cable)
 
-**A. Ethernet SSH (best if you have an RJ45 at the desk).** Fully decoupled from the USB port,
-so it works even on the **perf card** (g_midi-only). We mask network-*wait*, not networking, so
-the box still gets an IP -- boot just doesn't block on it. `ssh debian@<board-ip>` (find it from
-your router, or `ssh debian@beaglebone.local` if mDNS/avahi is left on).
+**A. USB-Ethernet dev gadget = the primary path.** Boot the **dev card**; it runs
+`gadget/usb_midi_rndis_gadget.sh` (installed as `usb_dev_gadget.sh`) -> the host sees a MIDI
+device **and** a usb network on the same cable. It uses **RNDIS + Microsoft OS descriptors**, so
+Win10/11 auto-installs the "USB RNDIS" driver with no INF file. Board = `192.168.7.2`.
 
-**B. USB-Ethernet dev gadget (single cable, no RJ45 needed).** Boot the **dev card**; it runs
-`gadget/usb_midi_ecm_gadget.sh` -> the host sees a MIDI device **and** a usb network. Board =
-`192.168.7.2`; set your laptop's usb-net interface to `192.168.7.1/24`, then `ssh debian@192.168.7.2`.
-(This is the same UDC hosting both functions -- dev only; the perf card drops ECM for speed.)
+Windows host steps (one-time):
+1. Plug the mini-USB cable. Windows enumerates a "Remote NDIS Compatible Device" + a new
+   network adapter (a few seconds).
+2. IP: if the board has `dnsmasq`, Windows gets `192.168.7.1` automatically -- done. If not,
+   set that adapter static: *Settings > Network > Ethernet > Edit IP > Manual > IPv4* =
+   `192.168.7.1`, mask `255.255.255.0` (gateway blank).
+3. `ssh debian@192.168.7.2` (Windows has a built-in OpenSSH client), or VS Code **Remote-SSH:
+   Connect to Host** (see section 2).
 
-**C. FTDI serial console (the always-works fallback).** A 3.3 V USB-serial cable on the **J1**
-6-pin header (next to P9_1): GND/RX/TX, **115200 8N1**. Independent of USB gadget *and* network,
-so it's how you debug the boot itself, a wedged network, or a bad gadget. In VS Code use the
-**Serial Monitor** extension (baud 115200) or `screen /dev/ttyUSB0 115200`.
+> The perf card drops RNDIS for `g_midi` alone (faster, no network) -- so do the tuning/coding on
+> the **dev card**, then move the finished `fsr_midi.py` to the perf card. Since you boot from SD,
+> that's just swapping cards.
+
+**B. FTDI serial console (the always-works fallback -- needs a cheap 3.3 V USB-serial cable).**
+On the **J1** 6-pin header (next to P9_1): GND/RX/TX, **115200 8N1**. Independent of USB gadget
+*and* network -- this is how you debug the boot itself or a gadget that won't enumerate. On
+Windows: VS Code **Serial Monitor** extension (or PuTTY) on the cable's `COMx`, baud 115200.
+Console-only (no file editing) -- for Remote-SSH you need path A.
 
 ## 2. VS Code Remote-SSH (the core loop)
 
 Add to `~/.ssh/config` on your laptop:
 ```
 Host bbb
-    HostName 192.168.7.2      # or the ethernet IP / beaglebone.local
+    HostName 192.168.7.2      # the RNDIS dev-gadget board IP
     User debian
 ```
+On Windows this file is `C:\Users\<you>\.ssh\config`.
 Then in VS Code: **Remote-SSH: Connect to Host -> bbb**. Open `/opt/fsr-midi` (the installed
 copy) or a git clone in the home dir. You now edit the board's files directly, with an integrated
 terminal for `systemctl` / `journalctl`. Open this repo locally too -- VS Code will offer the
@@ -77,11 +88,20 @@ is `debian@192.168.7.2`; pass your ethernet host if you use path A.
 
 | | dev card | perf card |
 |---|---|---|
-| gadget | `usb-midi-ecm-gadget` (MIDI + SSH-over-USB) | `g_midi` only (Option A) |
+| gadget | `usb-dev-gadget` (MIDI + RNDIS SSH-over-USB) | `g_midi` only (Option A) |
 | services | leave more on (avahi for `.local`, networking) | Stage-1 masks applied |
 | logging | `--verbose` in the unit | quiet |
 | boot | comfy, not measured | the ~10 s you ship |
 
-Build the perf card by running `setup/stage1_apply.sh` on it. Keep the dev card as your bench +
-rollback. When Stage 2 (`docs/stage2_fastboot.md`) is in play, experiment on a *third* spare card
+Set up the **dev card** gadget once (on the board, over serial or the stock USB-net before you
+cut it):
+```sh
+# Windows laptop -> RNDIS. (macOS/Linux: use gadget/usb_midi_ecm_gadget.sh instead.)
+sudo install -m0755 gadget/usb_midi_rndis_gadget.sh /usr/local/sbin/usb_dev_gadget.sh
+sudo install -m0644 gadget/usb-dev-gadget.service /etc/systemd/system/
+sudo systemctl enable --now usb-dev-gadget.service
+# also install the sensor script + unit (as stage1 step 5/6 does), then reboot.
+```
+Build the **perf card** by running `setup/stage1_apply.sh` on it (g_midi only, no RNDIS). Keep the
+dev card as your bench + rollback. When Stage 2 (`docs/stage2_fastboot.md`) is in play, experiment on a *third* spare card
 and keep both known-good cards untouched.

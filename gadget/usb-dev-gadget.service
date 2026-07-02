@@ -1,0 +1,17 @@
+[Unit]
+Description=DEV USB gadget: MIDI + USB-Ethernet (SSH-over-USB) via configfs
+# Install the OS-matching script to /usr/local/sbin/usb_dev_gadget.sh:
+#   Windows -> gadget/usb_midi_rndis_gadget.sh   (RNDIS + MS OS descriptors)
+#   macOS/Linux -> gadget/usb_midi_ecm_gadget.sh (ECM)
+# DEV ONLY -- the perf card runs g_midi alone. See docs/dev_workflow.md.
+After=sysinit.target
+Before=fsr-midi.service
+ConditionPathExists=/sys/class/udc
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/usb_dev_gadget.sh
+
+[Install]
+WantedBy=multi-user.target
