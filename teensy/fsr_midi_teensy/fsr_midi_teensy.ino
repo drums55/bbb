@@ -19,7 +19,7 @@ const int FSR_PIN   = A0;          // silk "F0" on Teensy 2.0. Any analog pin wo
 const int LED_PIN   = 0;           // external HIT LED. Teensy 2.0 silk "B0" = Arduino pin 0.
 const int POWER_LED = LED_BUILTIN; // on-board LED = solid ON while powered (2.0=11, ++2.0=6).
 const int NOTE      = 51;          // D#3  (original rig)
-const int CHANNEL   = 1;           // MIDI channel 1..16 (original rig used ch 1)
+const int CHANNEL   = 10;          // MIDI channel 1..16 (rig was ch 1; set to 10)
 
 // ADC full-scale differs by board; thresholds are fractions of it so they port unchanged.
 #if defined(__AVR__)
