@@ -36,6 +36,10 @@ Edit on the laptop, run on the board. See [`docs/dev_workflow.md`](docs/dev_work
 takes over the mini-USB port -- three ways to keep a shell (ethernet SSH / a **MIDI+USB-Ethernet
 dev gadget** / FTDI serial). Keep a **dev card** (comfy) and a **perf card** (the ~10 s boot).
 
+> **New here? Follow [`QUICKSTART.md`](QUICKSTART.md)** -- a from-0 runbook for a Windows laptop +
+> single mini-USB cable (get in over the stock gadget -> capture the old setup -> back up the SD ->
+> apply Stage 1 -> verify). The steps below are the same flow in brief.
+
 ## Do it in order
 1. **Diagnose (safe, read-only).** SSH into the BBB, run the block in
    [`docs/diagnostics.md`](docs/diagnostics.md), keep the output. It confirms the real

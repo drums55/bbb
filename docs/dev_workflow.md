@@ -17,6 +17,23 @@ are opt-in (a separate SD card / gadget), they don't live on the perf image.
   a composite **MIDI + USB-Ethernet (RNDIS)** dev gadget gives MIDI *and* SSH-over-USB at once.
   **FTDI serial** is the always-works fallback for debugging boot itself.
 
+## 0. Day-0: the stock image already gives you SSH-over-USB (use it first)
+
+Plug the untouched board into Windows and you'll see a **"BeagleBone Getting Started (E:)"** drive
+and the blue **USR0** LED heart-beating -- that's the stock multi-function gadget (mass-storage +
+serial + RNDIS network) booted and working. Use it to get in and run diagnostics *before* flashing
+or cutting anything:
+1. Install the Windows drivers from the board drive: run the 64-bit installer in `E:\Drivers\`.
+   This adds the **RNDIS network adapter** + a **serial COM** port.
+2. The board is at **192.168.7.2** (stock default; its dnsmasq configures your adapter). `ssh
+   debian@192.168.7.2` (your board password), or VS Code **Remote-SSH**. No-network fallback: open
+   the board's serial COM in VS Code **Serial Monitor** @115200 -> a login prompt.
+3. Run `docs/diagnostics.md` and `cat` the old sensor `.py`. *Then* build the dev/perf cards.
+
+The "Getting Started" drive is just the stock gadget's mass-storage; it disappears once we switch
+to `g_midi` / the dev gadget. You don't need `START.htm`. Our RNDIS dev gadget (section 1A) simply
+replicates this same SSH-over-USB path *minus* the mass-storage, *plus* the MIDI function.
+
 ## 1. Get a shell into the board (Windows, single mini-USB cable)
 
 **A. USB-Ethernet dev gadget = the primary path.** Boot the **dev card**; it runs
