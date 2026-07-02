@@ -19,7 +19,7 @@ const int NUM_PADS = 4;                              // how many pads are wired 
 const int FSR_PIN[NUM_PADS] = { A0, A1, A2, A3 };    // Teensy 2.0 silk F0, F1, F4, F5
 // LiveBox/blackbox 4x4 pad grid = MIDI notes 36..51  (pad 1 = 36 ... pad 16 = 51;
 // pad index = note - 36). Notes OUTSIDE 36..51 hit no pad. Pick the pads you want here:
-const int NOTE[NUM_PADS]    = { 36, 37, 38, 39 };    // pads 1-4 (36-39). e.g. bottom row = 48-51
+const int NOTE[NUM_PADS]    = { 48, 49, 50, 51 };    // top row / pads 13-16 (bottom row = 36-39)
 const int HIT_LED[NUM_PADS] = {  0,  1,  2,  3 };    // silk B0..B3. Use -1 to skip a pad's LED.
 const int CHANNEL   = 10;                            // MIDI channel 1..16 (all pads share it)
 const int POWER_LED = LED_BUILTIN;                   // on-board LED = solid ON while powered
