@@ -84,6 +84,14 @@ sudo systemctl daemon-reload && sudo reboot
 ## Notes
 - Access is over **RJ45 -> router** (laptop on the same WiFi). mDNS `beaglebone.local` was flaky
   after reboot; connect by IP instead (find via `arp -a | findstr 1c-ba-8c` after a ping sweep).
-- Not yet done (optional Stage-2): trim kernel/U-Boot 9.6s via `/boot/uEnv.txt` (`bootdelay=0`,
-  drop unused overlays) for ~18-20s total; or load the gadget in initramfs for host-sees-MIDI <10s.
-  Realistic floor: U-Boot+kernel ~4-6s.
+## Stage-2 attempts (measured -- not worth it on this board)
+- **uEnv trim** (commented `uboot_overlay_pru`, added `loglevel=3`; kept `enable_uboot_cape_universal`
+  and `net.ifnames=0`): kernel stayed **9.62s** (was 9.60s) -> **~0 gain**. The kernel time is a
+  fixed cost of the stock 4.19-ti kernel + cape-universal probing every pin, not the PRU overlay.
+  (uEnv backed up to `/boot/uEnv.txt.bak`; revert with `sudo cp /boot/uEnv.txt.bak /boot/uEnv.txt`.)
+- **initramfs gadget**: not pursued. The gadget can only bind the UDC *after* the kernel USB stack
+  is up (inside that 9.6s), so host-sees-MIDI can't beat ~kernel time -> ~10s vs the current ~12s,
+  i.e. ~2s for added risk/complexity. Skipped.
+- **The real floor here is kernel ~9.6s.** Going below ~15s total needs a custom minimal kernel /
+  Buildroot (drop unused drivers, replace cape-universal with a BB-ADC-only overlay) -- a separate
+  project, not a config tweak. Stopped at **24s total / ~12s host-sees-MIDI** (from 62s / ~50s).
