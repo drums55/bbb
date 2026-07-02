@@ -10,6 +10,11 @@ stock BeagleBoard Debian takes **~60 s** before the host sees MIDI (full Debian 
 network wait + the multi-function USB gadget), and Stage 1 cuts that to **~10 s** with **no
 reflash** -- reversibly.
 
+> **Want instant-on instead?** A BeagleBone is a Linux computer (boot floor ~9.6 s even after the
+> cuts). For *just* FSR -> MIDI, a microcontroller boots in <0.1 s. A ready-to-flash **Teensy**
+> version (same note 51 / ch 1 contract) lives in [`teensy/`](teensy/) -- see
+> [`teensy/QUICKSTART_windows.md`](teensy/QUICKSTART_windows.md).
+
 ## The key idea: decouple "host sees the device" from "the script started"
 The **`g_midi` kernel module** is loaded early at boot, so the host enumerates the USB-MIDI
 device within a few seconds -- independent of Python. The sensor script then just writes notes
