@@ -19,6 +19,8 @@ variants). **Nothing here changes the system.** Paste the output back before Sta
   echo "== MIDI =="; amidi -l 2>/dev/null; aplaymidi -l 2>/dev/null; \
   echo "== IIO/ADC =="; ls /sys/bus/iio/devices/ 2>/dev/null; \
   head -1 /sys/bus/iio/devices/iio:device0/in_voltage*_raw 2>/dev/null; \
+  echo "== BOOT MEDIUM (SD vs eMMC) =="; findmnt -n -o SOURCE / 2>/dev/null; \
+  cat /proc/cmdline 2>/dev/null; lsblk 2>/dev/null; \
   echo "== START =="; grep -rilE "midi|sensor|note" /etc/systemd/system/ /etc/rc.local 2>/dev/null; \
   crontab -l 2>/dev/null; ls -lt /home/debian/*.py /root/*.py 2>/dev/null | head; } 2>&1
 ```
@@ -31,6 +33,7 @@ variants). **Nothing here changes the system.** Paste the output back before Sta
 | `NET-WAIT` | which wait-online is `enabled` | Mask that one (usually only one exists). Biggest single win, ~15-30 s. |
 | `GADGET` + `UENV` | `libcomposite` loaded? a gadget under configfs? a `generic-board-startup` / `bb-usb-gadgets` unit? **`enable_uboot_usb_gadgets=1` in uEnv.txt?** | This is the stock composite gadget holding the single **UDC**. It must be freed so `g_midi` can bind. `UENV` tells us whether U-Boot (not a service) is the one grabbing it. |
 | `IIO/ADC`  | `iio:device0` present, `in_voltageN_raw` returns a number | Confirms the BB-ADC overlay is on and which `AINx` reads a value (your FSR channel = `ADC_CHAN`). |
+| `BOOT MEDIUM` | `/` on `mmcblk0p*` (=microSD) or `mmcblk1p*` (=onboard eMMC); `root=` in cmdline | Tells us which card holds the live `/boot/uEnv.txt` the setup script edits. **Booting from SD = card-swap reflash** (keep the working card, experiment on a spare, swap back to revert). |
 | `MIDI`     | `amidi -l` shows a port + its `hw:X,0` -> `/dev/snd/midiCXD0` | Confirms the gadget path and the rawmidi node (the script auto-detects it; only set `MIDI_DEV` if there are several). |
 | `START`    | any existing midi/sensor `.py` + how it's launched (unit / cron / rc.local) | The messy old launcher to disable and replace with `fsr-midi.service`. |
 

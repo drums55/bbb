@@ -10,6 +10,13 @@ Only pursue this if Stage 1's ~10 s isn't enough. **This is not applied by the s
 Chosen order: **2.1 initramfs g_midi** then **2.2 U-Boot trim**. Buildroot (2.3) is deferred
 unless you later need to reach the very floor.
 
+> **Reflash safety (this board boots from a microSD).** Because the OS is on a removable SD
+> card, every Stage-2 experiment is low-risk: **image a *spare* card, boot from it, and keep the
+> current working card untouched as the instant rollback** -- swap it back if anything breaks.
+> Confirm the boot medium first (`findmnt / ; lsblk` -> `/` on `mmcblk0p*` = microSD). Edits to
+> `/boot/uEnv.txt` and `update-initramfs` affect whichever card is *currently booted*, so do them
+> on the spare, not the golden card.
+
 ## 2.1 -- g_midi in the initramfs (host sees MIDI during *early* boot)
 Load the gadget from the initramfs so the USB device enumerates *before* the rootfs/userland
 is up -- the host sees a MIDI port in ~3-5 s while Debian finishes behind it.
