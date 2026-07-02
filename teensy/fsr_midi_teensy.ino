@@ -3,24 +3,31 @@
 // Matches the original BeagleBone rig: note 51 (D#3) on MIDI channel 1, LED lit while pressed.
 //
 // Arduino IDE setup:  Tools > Board > your Teensy  |  Tools > USB Type > "MIDI"  |  Upload.
-// (Works on Teensy 3.x / LC / 4.x. `usbMIDI` exists only when USB Type includes MIDI.)
+// Portable across Teensy 2.0 (ATmega32U4, 5V, 10-bit ADC) and Teensy 3.x/4.x (3.3V, 12-bit).
 //
-// Wiring -- FSR voltage divider off the 3.3 V rail (Teensy analog pins are 3.3 V, NOT 5 V!):
-//     3V3 ---[ FSR402 ]---+--- A0        (FSR_PIN)
-//                         +--- Rm ~22k --- GND
-//     LED:  LED_PIN ---[ R 330-1k ]---|>|--- GND   (anode to R, cathode to GND)
-// No clamp needed for an FSR (it's a resistor, no spikes). Meter A0: must stay <= 3.3 V.
+// ⚠️ ADC reference differs by board -- feed the FSR divider from the board's logic rail:
+//     Teensy 2.0  -> VCC (5V)          Teensy 3.x/4.x -> 3V3 (3.3V, pins NOT 5V tolerant)
+//
+//     VCC/3V3 ---[ FSR402 ]---+--- A0            (FSR_PIN)
+//                             +--- Rm ~22k ------ GND
+//     LED_PIN ---[ R 330-1k ]---|>|--- GND       (anode to R, cathode to GND)
+// FSR is a resistor (no spikes) -> no clamp. Meter A0 at max press: must stay <= the rail.
 
-const int FSR_PIN  = A0;   // FSR/Rm divider node
-const int LED_PIN  = 2;    // hit LED (GPIO -> R -> LED -> GND)
+const int FSR_PIN  = A0;   // Teensy 2.0: silk "F0". Any analog pin works.
+const int LED_PIN  = 11;   // Teensy 2.0 on-board LED = 11 (easy first test). External LED: any
+                           // digital pin, e.g. silk "B0" = Arduino pin 0 -> R -> LED -> GND.
 const int NOTE     = 51;   // D#3  (original rig)
 const int CHANNEL  = 1;    // MIDI channel 1..16 (original rig used ch 1)
 
-// Trigger shaping in 12-bit ADC counts (0..4095). Old rig used normalized 0..1.0; the raw
-// equivalents are noted (norm * 4095). Tune on the bench with the Serial print below.
-const int THRESH    = 800;   // press onset          (old THRESHOLD 0.2 ~= 820)
-const int RELEASE   = 400;   // note-off below this   (old RELEASE  0.1 ~= 410)
-const int VEL_CEIL  = 1300;  // count that maps to velocity 127 (old rig railed ~norm 0.31)
+// ADC full-scale differs by board; thresholds are fractions of it so they port unchanged.
+#if defined(__AVR__)
+  const int ADC_MAX = 1023;      // Teensy 2.0 (AVR): fixed 10-bit
+#else
+  const int ADC_MAX = 4095;      // Teensy 3.x/4.x: 12-bit (set in setup())
+#endif
+const int THRESH    = (int)(0.20 * ADC_MAX);  // press onset  (old THRESHOLD 0.2)
+const int RELEASE   = (int)(0.10 * ADC_MAX);  // note-off     (old RELEASE  0.1)
+const int VEL_CEIL  = (int)(0.32 * ADC_MAX);  // -> velocity 127 (old rig railed ~0.31)
 const int VEL_MIN   = 20;    // softest accepted hit
 const int PEAK_MS   = 7;     // track the peak this long, then send Note-On
 const int REFRAC_MS = 35;    // debounce after a note-off
@@ -30,7 +37,9 @@ int peak = 0;
 elapsedMillis sinceOnset, sinceOff;
 
 void setup() {
-  analogReadResolution(12);          // 0..4095
+#if !defined(__AVR__)
+  analogReadResolution(12);          // ARM Teensy: 0..4095 (AVR is fixed 10-bit)
+#endif
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 }

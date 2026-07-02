@@ -11,15 +11,22 @@ this is the natural fit.
 3. `Tools > USB Type` -> **MIDI** (this is what makes `usbMIDI` available).
 4. Open `fsr_midi_teensy.ino`, **Upload**. Done -- the host shows a "Teensy MIDI" device instantly.
 
-## Wire it (⚠️ 3.3 V analog -- Teensy pins are NOT 5 V tolerant)
+## Wire it (⚠️ feed the divider from the board's logic rail)
+- **Teensy 2.0** (ATmega32U4): runs at **5 V**, ADC is **10-bit** -> divider off **VCC (5V)**.
+- **Teensy 3.x/4.x**: **3.3 V** analog (pins NOT 5 V tolerant) -> divider off **3V3**.
+
 ```
-  3V3 ---[ FSR402 ]---+--- A0            (FSR_PIN)
-                      +--- Rm ~22k ------ GND
-  LED_PIN(2) ---[ R 330-1k ]---|>|--- GND
+  VCC(5V) / 3V3 ---[ FSR402 ]---+--- A0            (FSR_PIN; Teensy 2.0 silk "F0")
+                                +--- Rm ~22k ------ GND
+  LED_PIN ---[ R 330-1k ]---|>|--- GND
 ```
-FSR is a resistor (no spikes) -> no clamp needed. Meter A0 at max press: must stay <= 3.3 V
-(guaranteed since the divider is fed from 3V3). Pick any analog pin for `FSR_PIN`, any digital
-pin for `LED_PIN`.
+FSR is a resistor (no spikes) -> no clamp needed. Meter A0 at max press: must stay <= the rail
+(guaranteed since the divider is fed from that rail). The sketch auto-scales the thresholds to the
+board's ADC bits, so the same code works on 2.0 and 3.x/4.x.
+
+**Teensy 2.0 pin labels:** the silk uses AVR port names. `FSR_PIN = A0` is the pin silked **F0**;
+`LED_PIN = 11` is the **on-board LED** (handy for a first test). For the rig's external LED, use a
+digital pin, e.g. silk **B0** = Arduino pin `0` -> R -> LED -> GND, and set `LED_PIN = 0`.
 
 ## Config (top of the .ino) -- locked to the original rig
 `NOTE=51` (D#3), `CHANNEL=1`, `LED` lit while pressed. Trigger thresholds are the raw-count
