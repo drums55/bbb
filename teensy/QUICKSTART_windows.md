@@ -32,7 +32,7 @@ You already have the repo at `C:\git\bbb`. Update + open:
 cd C:\git\bbb
 git pull
 ```
-Then in Arduino IDE: **File > Open… > `C:\git\bbb\teensy\fsr_midi_teensy.ino`**.
+Then in Arduino IDE: **File > Open… > `C:\git\bbb\teensy\fsr_midi_teensy\fsr_midi_teensy.ino`**.
 (Or just download that one file from GitHub and open it.)
 
 ## STEP 5 -- Wire the FSR (⚠️ Teensy 2.0 is 5 V)

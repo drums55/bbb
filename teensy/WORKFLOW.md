@@ -7,7 +7,7 @@ edit -> flash -> test -> commit cycle.
 ```
   VS Code  ── your home base: git (pull/commit/push) + read the repo/docs
      │
-     │  (the code file: teensy/fsr_midi_teensy.ino)
+     │  (the code file: teensy/fsr_midi_teensy/fsr_midi_teensy.ino)
      ▼
   Arduino IDE  ── compiles + uploads the .ino to the Teensy
      │
@@ -47,13 +47,14 @@ Now `C:\git\bbb\teensy\` has the sketch + docs.
 - `Tools > Board > Teensy > **Teensy 2.0**`
 - `Tools > USB Type > **MIDI**`   ← makes it a MIDI device / enables `usbMIDI`
 
-### A4. Wire the FSR (⚠️ Teensy 2.0 = 5 V)
+### A4. Wire the FSR + hit LED (⚠️ Teensy 2.0 = 5 V)
 ```
   VCC(5V) ──[ FSR ]──┬── F0   (= A0 in code)
                      └── Rm(22k) ── GND
+  B0 (=pin 0) ──[ R 330-1k ]──▶|── GND     (external HIT LED, lights while pressed)
 ```
-LED: skip -- the sketch uses the on-board LED (pin 11) for now. (External LED later: silk **B0** =
-pin `0`, set `LED_PIN = 0`.)
+The **on-board LED stays solid ON while powered** (a "device alive" indicator) -- no wiring for
+that one. The **external LED on B0** follows the hits.
 
 ---
 
@@ -63,7 +64,7 @@ pin `0`, set `LED_PIN = 0`.)
    ```powershell
    cd C:\git\bbb && git pull
    ```
-2. **Arduino IDE:** `File > Open… > C:\git\bbb\teensy\fsr_midi_teensy.ino` (first time; after that it
+2. **Arduino IDE:** `File > Open… > C:\git\bbb\teensy\fsr_midi_teensy\fsr_midi_teensy.ino` (first time; after that it
    remembers). Tweak a value (e.g. `THRESH`, `NOTE`, `LED_PIN`).
 3. **Upload** (→). Plug the Teensy in; if it says "press button", tap the button once. ~1 s later
    it's running the new code.
@@ -72,7 +73,7 @@ pin `0`, set `LED_PIN = 0`.)
 5. **VS Code -> Source Control** (the branch icon on the left): you'll see `fsr_midi_teensy.ino`
    changed. Type a message -> **Commit** -> **Sync/Push**. (Or in the terminal:)
    ```powershell
-   git add teensy/fsr_midi_teensy.ino
+   git add teensy/fsr_midi_teensy/fsr_midi_teensy.ino
    git commit -m "teensy: tune thresholds"
    git push
    ```
