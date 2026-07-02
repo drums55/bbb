@@ -13,9 +13,10 @@
 //     LED_PIN ---[ R 330-1k ]---|>|--- GND       (anode to R, cathode to GND)
 // FSR is a resistor (no spikes) -> no clamp. Meter A0 at max press: must stay <= the rail.
 
-const int FSR_PIN  = A0;   // Teensy 2.0: silk "F0". Any analog pin works.
-const int LED_PIN  = 11;   // Teensy 2.0 on-board LED = 11 (easy first test). External LED: any
-                           // digital pin, e.g. silk "B0" = Arduino pin 0 -> R -> LED -> GND.
+const int FSR_PIN  = A0;         // silk "F0" on both Teensy 2.0 and ++2.0. Any analog pin works.
+const int LED_PIN  = LED_BUILTIN;// on-board LED, auto-correct per board (2.0=11, ++2.0=6). Easy
+                                 // first test. External LED later: a digital pin (silk "B0" =
+                                 // Arduino pin 0) -> R -> LED -> GND, then set LED_PIN = 0.
 const int NOTE     = 51;   // D#3  (original rig)
 const int CHANNEL  = 1;    // MIDI channel 1..16 (original rig used ch 1)
 

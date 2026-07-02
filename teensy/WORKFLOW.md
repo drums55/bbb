@@ -34,13 +34,11 @@ see the note at the end -- but keeping the code in one editor avoids "who has th
   2. `Tools > Board > Boards Manager…` -> search **Teensy** -> install *Teensy (for Arduino IDE 2.x)*.
 - **MIDI-OX** (optional, to watch MIDI on Windows) -- http://www.midiox.com
 
-### A2. Get the code onto your machine (it's on a feature branch)
-All the work is on the branch `claude/bbb-midi-boot-speed-jtmff1`. In VS Code open a **Terminal**
-(`Ctrl+~`) and:
+### A2. Get the code onto your machine
+Everything lives on **master**. In VS Code open a **Terminal** (`Ctrl+~`) and:
 ```powershell
 cd C:\git\bbb
-git fetch origin
-git checkout claude/bbb-midi-boot-speed-jtmff1
+git checkout master
 git pull
 ```
 Now `C:\git\bbb\teensy\` has the sketch + docs.
