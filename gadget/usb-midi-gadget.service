@@ -1,0 +1,14 @@
+[Unit]
+Description=Bring up MIDI-only USB gadget (configfs, Option B)
+DefaultDependencies=no
+After=systemd-modules-load.service
+Before=fsr-midi.service multi-user.target
+ConditionPathExists=/sys/class/udc
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/usb_f_midi_gadget.sh
+
+[Install]
+WantedBy=multi-user.target
