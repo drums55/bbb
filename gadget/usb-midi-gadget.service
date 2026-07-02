@@ -1,0 +1,14 @@
+[Unit]
+Description=Bring up MIDI-only USB gadget via configfs (Option B alternative to g_midi)
+# Only needs the UDC to exist; nothing network-related.
+After=sysinit.target
+Before=fsr-midi.service
+ConditionPathExists=/sys/class/udc
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/usb_f_midi_gadget.sh
+
+[Install]
+WantedBy=multi-user.target

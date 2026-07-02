@@ -1,0 +1,26 @@
+[Unit]
+Description=FSR pressure sensor -> USB MIDI (writes notes into the g_midi rawmidi port)
+# MIDI is USB-only, so we depend on NOTHING network-related. Order after sysinit.target
+# (local fs mounted, udev settled, device-tree overlays applied -> the ADC/IIO node and
+# /dev/snd exist) instead of DefaultDependencies=no: the very-early slot would race the
+# BB-ADC overlay and could skip us for the whole boot. This is ~1 s later, which does not
+# matter -- the host already SEES the MIDI device from the g_midi module loaded at
+# systemd-modules-load; only the first note is a hair later.
+After=sysinit.target
+# Soft gate; the script also waits (bounded) for the node, so a slightly late overlay is fine.
+ConditionPathExists=/sys/bus/iio/devices/iio:device0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/fsr-midi/fsr_midi.py
+Restart=on-failure
+RestartSec=1
+Nice=-10
+# Optional real-time scheduling for tighter trigger timing (uncomment if you need it):
+# CPUSchedulingPolicy=fifo
+# CPUSchedulingPriority=50
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
