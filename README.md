@@ -2,8 +2,8 @@
 
 A BeagleBone Black (AM335x) reads an **Interlink FSR402** pressure sensor through the on-chip
 ADC and emits **class-compliant USB-MIDI**. Slap/press the sensor -> a MIDI note goes to the
-host (the **LiveBox / blackbox** looper, or any DAW). One FSR -> one note (**note 36 = pad 1**,
-LiveBox convention), velocity from press force.
+host (the **LiveBox / blackbox** looper, or any DAW). One FSR -> one note (**note 51 / D#3 on
+MIDI channel 1**, matching the original rig), velocity from press force.
 
 The device already works. This repo is a **clean template rewrite** plus a **boot-time fix**:
 stock BeagleBoard Debian takes **~60 s** before the host sees MIDI (full Debian userland +
@@ -50,10 +50,10 @@ dev gadget** / FTDI serial). Keep a **dev card** (comfy) and a **perf card** (th
    script handles both, but confirm which applies).
 3. **Wire the sensor** per [`docs/hardware.md`](docs/hardware.md) (divider off the **1.8 V** rail
    so the ADC pin can't exceed 1.8 V). Note which `AINx` -> set `ADC_CHAN` in `src/fsr_midi.py`.
-4. **Set the MIDI mapping + LED.** `NOTE` / `CHANNEL` in `src/fsr_midi.py` must match the app's
-   pads channel (`_midiPadsChannel` in LiveBox). Default note 36, channel 10. If you wired the
-   **hit LED**, set `LED_GPIO` to the sysfs gpio number of your pin (see `docs/hardware.md`);
-   `LED_MODE` = `hold` (lit while pressed) or `flash` (brief blink). Set `LED_ENABLE=False` to skip it.
+4. **Set the MIDI mapping + LED.** `NOTE` / `CHANNEL` in `src/fsr_midi.py` must match what the app
+   listens for. Locked to the original rig: **note 51, channel 1**, `LED_GPIO=60` (P9_12),
+   `LED_MODE=hold`. Change `CHANNEL` (1..16) if you remap the app; `LED_MODE` = `hold` (lit while
+   pressed) or `flash` (brief blink); `LED_ENABLE=False` to skip the LED.
 5. **Apply Stage 1:** `sudo setup/stage1_apply.sh`, then `sudo reboot`.
 6. **Verify** (below). If you need faster, see `docs/stage2_fastboot.md`.
 

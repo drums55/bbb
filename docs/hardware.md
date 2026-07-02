@@ -64,7 +64,8 @@ Handy P8/P9 header pin -> gpio number (all default to GPIO mode on stock Debian)
 | P9_27  | 115  | P8_16  | 46   |
 
 (`gpio = 32*bank + index`; confirm your board with `gpioinfo` if you have libgpiod.) The
-template default is **48 = P9_15**, next to the analog pins -- change it to your actual pin.
+template default is **60 = P9_12** (`GPIO1_28`), matching the original rig -- change it if you
+rewire the LED.
 
 ## Notes
 - FSR402 is durable enough for repeated slap/tap triggering. Velocity is expressive but not

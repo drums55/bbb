@@ -12,6 +12,9 @@ ConditionPathExists=/sys/bus/iio/devices/iio:device0
 
 [Service]
 Type=simple
+# Optional overrides (MIDI channel/note) -- edit /etc/default/fsr-midi, no code change. The
+# leading "-" means "fine if the file is absent".
+EnvironmentFile=-/etc/default/fsr-midi
 ExecStart=/usr/bin/python3 /opt/fsr-midi/fsr_midi.py
 Restart=on-failure
 RestartSec=1

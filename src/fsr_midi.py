@@ -39,22 +39,25 @@ import time
 # ---------------------------------------------------------------------------
 
 # Which ADC channel the FSR is wired to (AIN0..AIN6 -> in_voltage0..in_voltage6_raw).
-ADC_CHAN = 0
+ADC_CHAN = 0             # old rig: PIN="P9_39" = AIN0
 
-# MIDI mapping. NOTE 36 = LiveBox/blackbox pad 1. CHANNEL is 1..16 (human); it MUST equal
-# the app's pads channel (_midiPadsChannel in LiveBox). 10 = GM-drums default on both.
-NOTE = 36
-CHANNEL = 10
+# MIDI mapping. NOTE 51 = D#3. CHANNEL is 1..16 (human). The old rig sent on channel 1
+# (mido's default), and the app already listens for that -- keep it unless you remap the app.
+NOTE = 51                # old rig: NOTE=51 (D#3)
+CHANNEL = 1              # old rig: mido default channel = MIDI ch 1 (NOT 10)
 
 # Trigger shaping, in raw ADC counts (0..4095 on the 12-bit AM335x ADC). THRESH is derived
-# from the resting level measured at startup (auto-calibrated), not hard-coded.
-REST_MARGIN = 60         # counts above rest that count as a "hit" onset
-RELEASE_HYST = 30        # note-off once the value falls below (THRESH - this)
-VEL_CEIL = 3500          # ADC count that maps to full velocity (need not rail at 4095)
-VEL_MIN = 20             # velocity for the softest accepted hit
+# from the resting level measured at startup (auto-calibrated), not hard-coded. The old rig
+# used Adafruit_BBIO's normalized read (0..1.0); the raw-count equivalents are noted below
+# (norm * 4095). FSR rests near 0, so rest+MARGIN ~= the old absolute threshold. Retune with
+# `python3 fsr_midi.py --tune`.
+REST_MARGIN = 800        # onset. old: THRESHOLD=0.2 norm ~= 820 counts
+RELEASE_HYST = 400       # note-off below (THRESH-this). old: RELEASE=0.1 norm ~= 410 counts
+VEL_CEIL = 1300          # count -> full velocity. old rig railed ~norm 0.31; tune on the bench
+VEL_MIN = 30             # velocity for the softest accepted hit
 VEL_MAX = 127            # velocity ceiling
 PEAK_WINDOW_MS = 7       # after onset, track the peak this long, then send Note-On
-REFRACTORY_MS = 35       # ignore new onsets this long after a note-off (debounce)
+REFRACTORY_MS = 35       # ignore new onsets this long after a note-off (debounce; old rig had none)
 
 POLL_HZ = 1000           # sensor poll rate
 RECAL_WHEN_IDLE_S = 2.0  # re-baseline the rest level after this long untouched (drift/creep)
@@ -65,8 +68,8 @@ MIDI_DEV = ""            # e.g. "/dev/snd/midiC1D0"
 # LED-on-hit (matches the original rig: an LED flashes when you press). Driven via zero-dep
 # sysfs GPIO. Wire: GPIO pin -> series R (~330-1k) -> LED -> GND (see docs/hardware.md).
 LED_ENABLE = True
-LED_GPIO = 48            # sysfs gpio number. 48 = P9_15 (GPIO1_16). *** CHANGE to your pin ***
-LED_MODE = "hold"        # "hold" = lit while pressed; "flash" = a brief blink per hit
+LED_GPIO = 60            # old rig: LED="P9_12" = GPIO1_28 = sysfs gpio 60
+LED_MODE = "hold"        # old rig lit the LED while pressed (HIGH on note-on, LOW on note-off)
 LED_FLASH_MS = 40        # flash length when LED_MODE == "flash"
 LED_ACTIVE_HIGH = True   # True: GPIO high = LED on (GPIO->R->LED->GND). False if wired to 3.3V.
 
@@ -185,6 +188,26 @@ class Led:
             self.val.flush()
         except OSError:
             self.ok = False
+
+
+def apply_overrides(argv):
+    """Let CHANNEL / NOTE be changed without editing this file. Precedence (low->high):
+    the constants above < env vars (FSR_CHANNEL / FSR_NOTE, e.g. from /etc/default/fsr-midi)
+    < CLI flags (--channel N / --note N). Recomputes the MIDI status bytes afterwards."""
+    global CHANNEL, NOTE, STATUS_ON, STATUS_OFF
+    CHANNEL = int(os.environ.get("FSR_CHANNEL", CHANNEL))
+    NOTE = int(os.environ.get("FSR_NOTE", NOTE))
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--channel" and i + 1 < len(argv):
+            CHANNEL = int(argv[i + 1]); i += 1
+        elif argv[i] == "--note" and i + 1 < len(argv):
+            NOTE = int(argv[i + 1]); i += 1
+        i += 1
+    CHANNEL = max(1, min(16, CHANNEL))          # clamp to a legal MIDI channel
+    NOTE = max(0, min(127, NOTE))
+    STATUS_ON = 0x90 | ((CHANNEL - 1) & 0x0F)
+    STATUS_OFF = 0x80 | ((CHANNEL - 1) & 0x0F)
 
 
 def main():
@@ -325,6 +348,7 @@ if __name__ == "__main__":
         if "--tune" in sys.argv:
             sys.exit(tune())
         VERBOSE = "--verbose" in sys.argv or "-v" in sys.argv
+        apply_overrides(sys.argv[1:])          # env vars + --channel/--note override the constants
         sys.exit(main())
     except KeyboardInterrupt:
         sys.stdout.write("\n")

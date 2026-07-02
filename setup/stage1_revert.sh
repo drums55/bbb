@@ -28,6 +28,7 @@ fi
 echo "== remove sensor service + gadget config =="
 systemctl disable fsr-midi.service 2>/dev/null || true
 rm -f /etc/systemd/system/fsr-midi.service
+rm -f /etc/default/fsr-midi
 rm -f /etc/modules-load.d/g_midi.conf /etc/modprobe.d/g_midi.conf
 systemctl daemon-reload
 

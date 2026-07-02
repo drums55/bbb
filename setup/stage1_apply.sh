@@ -62,6 +62,8 @@ echo "== [6/6] install sensor script + service =="
 install -d /opt/fsr-midi
 install -m 0755 "$REPO/src/fsr_midi.py" /opt/fsr-midi/fsr_midi.py
 install -m 0644 "$REPO/systemd/fsr-midi.service" /etc/systemd/system/fsr-midi.service
+# channel/note override file -- install only if absent so we never clobber your edits
+[ -f /etc/default/fsr-midi ] || install -m 0644 "$REPO/systemd/fsr-midi.default" /etc/default/fsr-midi
 systemctl daemon-reload
 systemctl enable fsr-midi.service
 

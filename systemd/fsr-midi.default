@@ -1,0 +1,5 @@
+# Install to: /etc/default/fsr-midi   (read by fsr-midi.service via EnvironmentFile)
+# Change the MIDI channel/note here WITHOUT editing code, then:  sudo systemctl restart fsr-midi
+# These override the constants in fsr_midi.py; leave a line out to keep the file's default.
+FSR_CHANNEL=1       # 1..16  (must match what the app/DAW listens on)
+FSR_NOTE=51         # 0..127 (51 = D#3)
