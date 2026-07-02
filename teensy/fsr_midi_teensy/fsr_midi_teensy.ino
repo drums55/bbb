@@ -29,10 +29,10 @@ const int CHANNEL   = 1;           // MIDI channel 1..16 (original rig used ch 1
 #endif
 const int THRESH    = (int)(0.20 * ADC_MAX);  // press onset  (old THRESHOLD 0.2)
 const int RELEASE   = (int)(0.10 * ADC_MAX);  // note-off     (old RELEASE  0.1)
-const int VEL_CEIL  = (int)(0.22 * ADC_MAX);  // press count that maps to velocity 127. LOWER =
+const int VEL_CEIL  = (int)(0.25 * ADC_MAX);  // press count that maps to velocity 127. LOWER =
                                               // reach 127 with a lighter hit. Tune to YOUR hardest
                                               // press (see the tune note in WORKFLOW.md).
-const int VEL_MIN   = 20;    // softest accepted hit
+const int VEL_MIN   = 90;    // softest accepted hit
 const int PEAK_MS   = 7;     // track the peak this long, then send Note-On
 const int REFRAC_MS = 35;    // debounce after a note-off
 
