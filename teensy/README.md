@@ -7,6 +7,7 @@ this is the natural fit.
 
 > **Full dev workflow** (VS Code + git + Arduino IDE, day-to-day loop): see
 > [`WORKFLOW.md`](WORKFLOW.md). One-time install checklist: [`QUICKSTART_windows.md`](QUICKSTART_windows.md).
+> **Building the physical multi-pad** (2–4 pads, enclosure, pad↔note map, wiring): [`BUILD.md`](BUILD.md).
 
 ## Flash it
 1. Install **Arduino IDE** + **Teensyduino**.
